@@ -5,21 +5,7 @@ from src.model.process import Process, ProcessResult, GanttEntry
 
 def round_robin(processes: List[Process], quantum: int
                 ) -> Tuple[List[GanttEntry], List[ProcessResult]]:
-    """
-    Round Robin Scheduling.
-
-    Rules:
-      - Processes are sorted by arrival time initially.
-      - A ready queue rotates: after each time quantum, the running process
-        is re-added to the back of the queue (if not finished).
-      - Processes that arrive DURING a time slice are added to the ready queue
-        AFTER the current slice finishes (standard FIFO queue behavior).
-      - If the ready queue is empty, CPU is idle until the next arrival.
-
-    Returns:
-      gantt  : list of (pid, start, end) execution segments
-      results: list of ProcessResult for each process
-    """
+   
     if not processes:
         return [], []
 
@@ -137,6 +123,94 @@ def priority_scheduling(processes: List[Process]
         gantt.append((pid, start, time))
         done.add(pid)
         completion[pid] = time
+
+    # Build results
+    results = []
+    for p in procs:
+        tat = completion[p.pid] - p.arrival
+        wt = tat - p.burst
+        rt = first_run[p.pid] - p.arrival
+        results.append(ProcessResult(
+            pid=p.pid, arrival=p.arrival, burst=p.burst, priority=p.priority,
+            completion=completion[p.pid], wt=wt, tat=tat, rt=rt
+        ))
+
+    return gantt, results
+
+
+# ─── Preemptive Priority Scheduling ──────────────────────────────────────────
+
+def preemptive_priority_scheduling(processes: List[Process]
+                                   ) -> Tuple[List[GanttEntry], List[ProcessResult]]:
+
+    if not processes:
+        return [], []
+
+    # Sort processes by arrival
+    procs = sorted(processes, key=lambda p: p.arrival)
+    n = len(procs)
+    
+    remaining = {p.pid: p.burst for p in procs}
+    first_run = {p.pid: -1 for p in procs}
+    completion = {p.pid: 0 for p in procs}
+    
+    gantt: List[GanttEntry] = []
+    time = 0
+    completed = 0
+    
+    current_pid = None
+    start_time = 0
+
+    while completed < n:
+        # Get all arrived processes that are not yet completed
+        available = [p for p in procs if p.arrival <= time and remaining[p.pid] > 0]
+        
+        if not available:
+            # If no process is available, jump time to the next arrival
+            if current_pid is not None:
+                gantt.append((current_pid, start_time, time))
+                current_pid = None
+            next_arrivals = [p.arrival for p in procs if remaining[p.pid] > 0 and p.arrival > time]
+            if next_arrivals:
+                time = min(next_arrivals)
+            continue
+            
+        # Select highest priority (lowest number), break ties by earliest arrival then pid
+        selected = min(available, key=lambda p: (p.priority, p.arrival, p.pid))
+        
+        # If CPU was idle or a new process preempted the current one
+        if current_pid != selected.pid:
+            # Save previous gantt segment
+            if current_pid is not None:
+                gantt.append((current_pid, start_time, time))
+            
+            # Record first run time for response time
+            if first_run[selected.pid] == -1:
+                first_run[selected.pid] = time
+                
+            current_pid = selected.pid
+            start_time = time
+            
+        # Execute for 1 unit of time
+        # Alternatively, execute until the next process arrives or the current finishes
+        # Find time until next arrival or completion
+        next_arr_time = min([p.arrival for p in procs if p.arrival > time] + [float('inf')])
+        time_to_run = min(remaining[current_pid], next_arr_time - time)
+        if time_to_run <= 0:
+            time_to_run = 1 # Fallback just in case
+            
+        time += time_to_run
+        remaining[current_pid] -= time_to_run
+        
+        if remaining[current_pid] == 0:
+            completed += 1
+            completion[current_pid] = time
+            gantt.append((current_pid, start_time, time))
+            current_pid = None
+
+    # Complete the last running process if any
+    if current_pid is not None:
+        gantt.append((current_pid, start_time, time))
 
     # Build results
     results = []
