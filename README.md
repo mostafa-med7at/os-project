@@ -23,7 +23,10 @@ Users can input a dynamic number of processes along with their respective arriva
    *(Note: On some systems, you may need to use `python3 main.py` or `py main.py`)*
 
 ## Team Members
-- Mostafa medhat abdellatif 20240978
-- 
-- 
-- 
+- Mostafa medhat abdellatif 
+- ali hossam mohamed taher
+- Ahmed Abdelhady 
+- Ahmed talaat
+- soliman waheed
+- abdelrahman ibrahim
+- mohamed emad
