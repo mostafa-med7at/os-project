@@ -23,7 +23,7 @@ Users can input a dynamic number of processes along with their respective arriva
    *(Note: On some systems, you may need to use `python3 main.py` or `py main.py`)*
 
 ## Team Members
-- [Insert Team Member 1 Name]
-- [Insert Team Member 2 Name]
-- [Insert Team Member 3 Name]
-- [Insert Team Member 4 Name]
+- Mostafa medhat abdellatif
+- 
+- 
+- 
